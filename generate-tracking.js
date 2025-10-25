@@ -6,7 +6,7 @@ const { signString } = require('./signer');
 function generateTrackingSnippet(campaignName = 'Manual Campaign') {
   const messageId = uuidv4();
   const pixelSig = signString(`m=${messageId}`);
-  const pixelUrl = `${process.env.APP_BASE}/pixel?m=${messageId}&sig=${pixelSig}`;
+  const pixelUrl = `https://email-tracker-flax-psi.vercel.app/pixel?m=${messageId}&sig=${pixelSig}`;
   
   const trackingHtml = `
 <!-- Orbitl Email Tracking -->
