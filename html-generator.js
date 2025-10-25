@@ -1,6 +1,6 @@
 const { signString } = require('./signer');
 const { v4: uuidv4 } = require('uuid');
-const BASE = process.env.APP_BASE || 'https://your.app';
+const BASE = process.env.APP_BASE || 'https://email-tracker-flax-psi.vercel.app/';
 function generate(message) {
   const id = message.id || uuidv4();
   const links = message.links || [];
