@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Details - Orbitl</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900" id="campaignTitle">Campaign Details</h1>
+                    <p class="text-gray-600" id="campaignId">Loading...</p>
+                    <a href="/" class="text-blue-600 hover:text-blue-800 text-sm">← Back to Dashboard</a>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-gray-500" id="sentDate">Sent: Loading...</div>
+                    <div class="text-sm text-gray-500" id="trackingId">ID: Loading...</div>
+                </div>
+            </div>
+        </div>
+        <div class="text-right">
+    <div class="text-sm text-gray-500" id="sentDate">Sent: Loading...</div>
+    <div class="text-sm text-gray-500" id="trackingId">ID: Loading...</div>
+    <div class="text-sm text-gray-500" id="lastUpdated">Last updated: Never</div>
+    <button 
+        onclick="loadCampaignDetails()" 
+        id="refreshBtn"
+        class="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+    >
+        Refresh Data
+    </button>
+</div>
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div id="totalOpens" class="text-2xl font-bold text-green-600">-</div>
+                <div class="text-gray-600">Total Opens</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div id="totalClicks" class="text-2xl font-bold text-purple-600">-</div>
+                <div class="text-gray-600">Total Clicks</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div id="openRate" class="text-2xl font-bold text-blue-600">-</div>
+                <div class="text-gray-600">Open Rate</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div id="clickRate" class="text-2xl font-bold text-orange-600">-</div>
+                <div class="text-gray-600">Click Rate</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Opens Section -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-xl font-semibold">📨 Email Opens</h2>
+                    <p class="text-sm text-gray-600" id="opensCount">0 opens</p>
+                </div>
+                <div class="p-4 max-h-96 overflow-y-auto">
+                    <div id="opensList" class="space-y-3">
+                        <div class="text-center text-gray-500 py-8">Loading opens...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clicks Section -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-xl font-semibold">🔗 Link Clicks</h2>
+                    <p class="text-sm text-gray-600" id="clicksCount">0 clicks</p>
+                </div>
+                <div class="p-4 max-h-96 overflow-y-auto">
+                    <div id="clicksList" class="space-y-3">
+                        <div class="text-center text-gray-500 py-8">Loading clicks...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tracking Snippet -->
+        <div class="mt-8 bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b">
+                <h2 class="text-xl font-semibold">📋 Tracking Snippet</h2>
+                <p class="text-sm text-gray-600">HTML code used for this campaign</p>
+            </div>
+            <div class="p-6">
+                <textarea 
+                    id="trackingSnippet" 
+                    class="w-full h-32 px-3 py-2 border border-gray-300 rounded-md font-mono text-sm bg-gray-50"
+                    readonly
+                >Loading tracking snippet...</textarea>
+                <button 
+                    onclick="copySnippet()"
+                    class="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                    Copy Snippet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Get campaign ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const campaignId = urlParams.get('id');
+
+    if (!campaignId) {
+        document.body.innerHTML = '<div class="container mx-auto px-4 py-8 text-center text-red-600">No campaign ID specified</div>';
+    }
+
+    let isLoading = false;
+
+    async function loadCampaignDetails() {
+        if (isLoading) return;
+        
+        isLoading = true;
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Loading...';
+        }
+
+        try {
+            console.log('Loading campaign:', campaignId);
+            
+            const response = await fetch(`/api/campaign/${campaignId}`);
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            // Update header
+            document.getElementById('campaignTitle').textContent = data.campaign.subject;
+            document.getElementById('campaignId').textContent = `ID: ${data.campaign.id}`;
+            document.getElementById('sentDate').textContent = `Sent: ${new Date(data.campaign.sent_at).toLocaleString()}`;
+            document.getElementById('trackingId').textContent = `ID: ${data.campaign.id.slice(0, 8)}...`;
+            document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+            // Update stats
+            document.getElementById('totalOpens').textContent = data.opens.length;
+            document.getElementById('totalClicks').textContent = data.clicks.length;
+            document.getElementById('openRate').textContent = ((data.opens.length) * 100).toFixed(1) + '%';
+            document.getElementById('clickRate').textContent = ((data.clicks.length) * 100).toFixed(1) + '%';
+
+            // Update counts
+            document.getElementById('opensCount').textContent = `${data.opens.length} opens`;
+            document.getElementById('clicksCount').textContent = `${data.clicks.length} clicks`;
+
+            // Render opens
+            const opensList = document.getElementById('opensList');
+            if (data.opens.length === 0) {
+                opensList.innerHTML = '<div class="text-center text-gray-500 py-8">No opens yet</div>';
+            } else {
+                opensList.innerHTML = data.opens.map(open => `
+                    <div class="border border-gray-200 rounded-lg p-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-medium text-gray-900">
+                                    ${open.ip || 'Unknown IP'}
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    ${open.ua ? open.ua.substring(0, 50) + '...' : 'Unknown device'}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    Referer: ${open.referer || 'Direct'}
+                                </div>
+                            </div>
+                            <div class="text-right text-sm text-gray-500">
+                                ${new Date(open.opened_at).toLocaleString()}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Render clicks
+            const clicksList = document.getElementById('clicksList');
+            if (data.clicks.length === 0) {
+                clicksList.innerHTML = '<div class="text-center text-gray-500 py-8">No clicks yet</div>';
+            } else {
+                clicksList.innerHTML = data.clicks.map(click => `
+                    <div class="border border-gray-200 rounded-lg p-3">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="font-medium text-gray-900 break-all">
+                                    <a href="${click.url}" target="_blank" class="text-blue-600 hover:underline">
+                                        ${click.url}
+                                    </a>
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    ${click.ip || 'Unknown IP'}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    ${click.ua ? click.ua.substring(0, 50) + '...' : 'Unknown device'}
+                                </div>
+                            </div>
+                            <div class="text-right text-sm text-gray-500 ml-4">
+                                ${new Date(click.clicked_at).toLocaleString()}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Generate tracking snippet
+            const trackingSnippet = `<!-- Orbitl Email Tracking -->
+<img src="${window.location.origin.replace('3001', '3000')}/pixel?m=${data.campaign.id}&sig=GENERATED_SIGNATURE" width="1" height="1" style="display:none;max-height:1px;max-width:1px" alt="" />
+<!-- End Orbitl Tracking -->`;
+            
+            document.getElementById('trackingSnippet').value = trackingSnippet;
+
+        } catch (error) {
+            console.error('Error loading campaign:', error);
+            document.body.innerHTML = `
+                <div class="container mx-auto px-4 py-8">
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <h2 class="font-bold">Error loading campaign</h2>
+                        <p>${error.message}</p>
+                        <a href="/" class="text-blue-600 hover:text-blue-800 text-sm">← Back to Dashboard</a>
+                    </div>
+                </div>
+            `;
+        } finally {
+            isLoading = false;
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = 'Refresh Data';
+            }
+        }
+    }
+
+    function copySnippet() {
+        const textarea = document.getElementById('trackingSnippet');
+        textarea.select();
+        document.execCommand('copy');
+        
+        // Show confirmation
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.classList.add('bg-green-600');
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('bg-green-600');
+        }, 2000);
+    }
+
+    // Load data when page loads
+    document.addEventListener('DOMContentLoaded', loadCampaignDetails);
+</script>
+</body>
+</html>
