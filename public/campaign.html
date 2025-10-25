@@ -245,9 +245,10 @@
                     `).join('');
                 }
 
-                // Generate tracking snippet
-                const trackingSnippet = `<!-- Orbitl Email Tracking -->
-<img src="${window.location.origin.replace('3001', '3000')}/pixel?m=${data.campaign.id}&sig=GENERATED_SIGNATURE" width="1" height="1" style="display:none;max-height:1px;max-width:1px" alt="" />
+                // FIXED: Use the actual stored tracking snippet with REAL signature
+                const trackingSnippet = data.campaign.metadata?.tracking_snippet || 
+                  `<!-- Orbitl Email Tracking -->
+<img src="${data.base_url || 'https://email-tracker-e61mr1vqn-maxmickos-projects.vercel.app'}/pixel?m=${data.campaign.id}&sig=INVALID_SIGNATURE_PLEASE_REGENERATE" width="1" height="1" style="display:none;max-height:1px;max-width:1px" alt="" />
 <!-- End Orbitl Tracking -->`;
                 
                 document.getElementById('trackingSnippet').value = trackingSnippet;
