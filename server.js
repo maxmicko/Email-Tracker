@@ -1,4 +1,4 @@
-// server.js
+// server.js - UPDATED FOR VERCEL
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
@@ -9,6 +9,9 @@ const supabase = require('./supabase-api'); // Use the API client directly
 const app = express();
 app.use(helmet());
 app.set('trust proxy', true);
+
+// Your Vercel domain
+const APP_DOMAIN = 'https://email-tracker-flax-psi.vercel.app';
 
 // Security: Restrict to your Vercel domain
 const ALLOWED_DOMAINS = [
@@ -56,7 +59,7 @@ app.get('/health', async (req, res) => {
       status: 'ok', 
       database: error ? 'error' : 'connected',
       message: error ? error.message : 'All systems operational',
-      domain: 'email-tracker-flax-psi.vercel.app'
+      domain: APP_DOMAIN
     });
   } catch (error) {
     res.json({ 
@@ -172,7 +175,7 @@ app.get('/dashboard', async (req, res) => {
     res.json({
       status: 'success',
       data: dashboardData,
-      domain: 'email-tracker-flax-psi.vercel.app'
+      domain: APP_DOMAIN
     });
     
   } catch (error) {
@@ -187,7 +190,7 @@ app.get('/dashboard', async (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     service: 'Email Tracker API',
-    domain: 'email-tracker-flax-psi.vercel.app',
+    domain: APP_DOMAIN,
     endpoints: {
       health: '/health',
       dashboard: '/dashboard',
@@ -202,10 +205,10 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Email tracker server running on port ${PORT}`);
-  console.log(`✅ Restricted to: https://email-tracker-flax-psi.vercel.app`);
-  console.log(`📊 Health check: https://email-tracker-flax-psi.vercel.app/health`);
-  console.log(`📈 Dashboard: https://email-tracker-flax-psi.vercel.app/dashboard`);
-  console.log(`📧 Tracking ready at: ${process.env.APP_BASE || 'https://email-tracker-flax-psi.vercel.app'}`);
+  console.log(`✅ Restricted to: ${APP_DOMAIN}`);
+  console.log(`📊 Health check: ${APP_DOMAIN}/health`);
+  console.log(`📈 Dashboard: ${APP_DOMAIN}/dashboard`);
+  console.log(`📧 Tracking ready at: ${APP_DOMAIN}`);
 });
 
 // Handle graceful shutdown
