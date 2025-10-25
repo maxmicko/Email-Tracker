@@ -1,4 +1,4 @@
-// server.js - COMPLETE FIXED VERSION
+// server.js - NO LOCALHOST REFERENCES
 const express = require('express');
 const helmet = require('helmet');
 const { v4: uuidv4 } = require('uuid');
@@ -6,12 +6,12 @@ const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 const path = require('path');
 
-// Hardcoded configuration
+// Hardcoded configuration - ONLY VERCEL URL
 const CONFIG = {
   SUPABASE_URL: 'https://jfzzxfzwsgxwurgbbjvw.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impmenp4Znp3c2d4d3VyZ2JianZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzOTAwMzgsImV4cCI6MjA3Njk2NjAzOH0.RWOWjMkCAHoFAwEm2CuMu9ZbEfzImUNtCvx_tXRn40',
   TRACK_SECRET: '3a5d12e9f61f4a88c9a39a51f3a879b2',
-  APP_BASE: 'https://email-tracker-e61mr1vqn-maxmickos-projects.vercel.app'
+  APP_BASE: 'https://email-tracker-flax-psi.vercel.app' // ONLY VERCEL URL
 };
 
 console.log('🚀 Starting Orbitl Tracker...');
@@ -21,7 +21,7 @@ const app = express();
 // Middleware
 app.use(helmet());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname)));
 app.set('trust proxy', true);
 
 // Supabase client
@@ -45,17 +45,17 @@ function verifyString(str, sig) {
   } catch { return false; }
 }
 
-// Serve dashboard HTML
+// Serve HTML files
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/generate.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'generate.html'));
+  res.sendFile(path.join(__dirname, 'generate.html'));
 });
 
 app.get('/campaign.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'campaign.html'));
+  res.sendFile(path.join(__dirname, 'campaign.html'));
 });
 
 // Health check
@@ -73,7 +73,7 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// API Routes
+// API endpoint to get all stats
 app.get('/api/stats', async (req, res) => {
   console.log('📊 API called - fetching data...');
   
@@ -119,12 +119,15 @@ app.get('/api/stats', async (req, res) => {
     const totalOpens = campaigns.reduce((sum, c) => sum + c.opens, 0);
     const totalClicks = campaigns.reduce((sum, c) => sum + c.clicks, 0);
 
-    res.json({
+    const response = {
       total_campaigns: campaigns.length,
       total_opens: totalOpens,
       total_clicks: totalClicks,
       campaigns: campaigns
-    });
+    };
+
+    console.log('✅ Sending response with:', response.total_campaigns, 'campaigns');
+    res.json(response);
 
   } catch (error) {
     res.status(500).json({ 
@@ -176,7 +179,7 @@ app.get('/api/campaign/:id', async (req, res) => {
   }
 });
 
-// API endpoint to generate tracking snippet - FIXED WITH REAL SIGNATURES
+// API endpoint to generate tracking snippet - ONLY VERCEL URL
 app.post('/api/generate-snippet', async (req, res) => {
   console.log('🎯 Generating tracking snippet...');
   
@@ -184,7 +187,7 @@ app.post('/api/generate-snippet', async (req, res) => {
     const { campaignName } = req.body;
     const campaign = campaignName || 'Manual Campaign';
     
-    // Generate tracking data with REAL signature
+    // Generate tracking data - ONLY VERCEL URL
     const messageId = uuidv4();
     const pixelSig = signString(`m=${messageId}`);
     const pixelUrl = `${CONFIG.APP_BASE}/pixel?m=${messageId}&sig=${pixelSig}`;
@@ -195,7 +198,7 @@ app.post('/api/generate-snippet', async (req, res) => {
 <!-- End Orbitl Tracking -->
     `.trim();
 
-    // Save to database with the actual tracking snippet
+    // Save to database
     console.log('💾 Saving to database...');
     const { error } = await supabase
       .from('messages')
@@ -209,7 +212,7 @@ app.post('/api/generate-snippet', async (req, res) => {
           manual: true,
           sent_at: new Date().toISOString(),
           base_url: CONFIG.APP_BASE,
-          tracking_snippet: trackingHtml  // Store the actual snippet with real signature
+          tracking_snippet: trackingHtml
         }
       }]);
 
@@ -222,7 +225,7 @@ app.post('/api/generate-snippet', async (req, res) => {
     
     res.json({
       success: true,
-      snippet: trackingHtml,  // Return the actual snippet with real signature
+      snippet: trackingHtml,
       messageId: messageId,
       campaignName: campaign,
       tracking_url: CONFIG.APP_BASE
@@ -338,27 +341,12 @@ app.get('/click', async (req, res) => {
   }
 });
 
-// Handle 404 for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: 'API endpoint not found' });
-});
-
-// Handle all other routes - serve frontend
+// Handle all other routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
 
 // Export for Vercel
 module.exports = app;
-
-// For local development
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`🚀 Orbitl Tracker running on port ${PORT}`);
-    console.log(`🔗 Base URL: ${CONFIG.APP_BASE}`);
-    console.log(`📊 Dashboard: http://localhost:${PORT}`);
-    console.log(`🔧 Health: http://localhost:${PORT}/health`);
-  });
-}
