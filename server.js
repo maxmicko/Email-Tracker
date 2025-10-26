@@ -1,4 +1,4 @@
-// server.js - COMPLETE VERSION WITH PNG PIXELS
+// server.js - COMPLETE VERSION WITH GIF PIXELS
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
@@ -21,8 +21,8 @@ app.set('trust proxy', true);
 // Your local domain
 const APP_DOMAIN = 'http://localhost:3000';
 
-// PNG tracking pixel - more reliable than GIF
-const PNG_PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+// GIF tracking pixel - more reliable than PNG
+const GIF_PIXEL = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
 // Security: Restrict to your Vercel domain
 const ALLOWED_DOMAINS = [
@@ -40,8 +40,8 @@ app.use((req, res, next) => {
   const isAllowedHost = host && ALLOWED_DOMAINS.some(domain => host.includes(domain));
   const isAllowedReferer = !referer || ALLOWED_DOMAINS.some(domain => referer.includes(domain));
   
-  // Allow health checks and tracking endpoints (pixel/click) from anywhere since they're called from emails
-  const isTrackingEndpoint = req.path === '/pixel' || req.path === '/click' || req.path === '/track';
+  // Allow health checks and tracking endpoints (pixel.gif/click) from anywhere since they're called from emails
+  const isTrackingEndpoint = req.path === '/pixel.gif' || req.path === '/click' || req.path === '/track';
   const isHealthCheck = req.path === '/health';
   
   if (isTrackingEndpoint || isHealthCheck) {
@@ -68,7 +68,7 @@ app.get('/health', async (req, res) => {
       database: error ? 'error' : 'connected',
       message: error ? error.message : 'All systems operational',
       domain: APP_DOMAIN,
-      pixel_type: 'PNG'
+      pixel_type: 'GIF'
     });
   } catch (error) {
     res.json({ 
@@ -83,24 +83,24 @@ function clientIp(req) {
   return (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
 }
 
-// SVG Pixel tracking endpoint
-app.get('/pixel', async (req, res) => {
+// GIF Pixel tracking endpoint
+app.get('/pixel.gif', async (req, res) => {
   const { m, sig } = req.query;
   
-  console.log('🔍 PNG Pixel hit:', { m, sig, ip: clientIp(req) });
+  console.log('🔍 GIF Pixel hit:', { m, sig, ip: clientIp(req) });
   
   if (!m || !sig || !verifyString(`m=${m}`, sig)) {
-    console.log('❌ Invalid PNG pixel request');
-    // Still return a valid PNG but don't track
+    console.log('❌ Invalid GIF pixel request');
+    // Still return a valid GIF but don't track
     res.set({
-      'Content-Type': 'image/png',
-      'Content-Length': PNG_PIXEL.length,
+      'Content-Type': 'image/gif',
+      'Content-Length': GIF_PIXEL.length,
       'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
       'Pragma': 'no-cache',
       'Expires': '0',
       'Access-Control-Allow-Origin': '*'
     });
-    return res.send(PNG_PIXEL);
+    return res.send(GIF_PIXEL);
   }
   
   // Track the open asynchronously
@@ -124,17 +124,17 @@ app.get('/pixel', async (req, res) => {
     }
   })();
   
-  // Return the PNG tracking pixel
+  // Return the GIF tracking pixel
   res.set({
-    'Content-Type': 'image/png',
-    'Content-Length': PNG_PIXEL.length,
+    'Content-Type': 'image/gif',
+    'Content-Length': GIF_PIXEL.length,
     'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
     'Pragma': 'no-cache',
     'Expires': '0',
     'Access-Control-Allow-Origin': '*'
   });
   
-  res.send(PNG_PIXEL);
+  res.send(GIF_PIXEL);
 });
 
 // Alternative tracking endpoint (backward compatibility)
@@ -145,10 +145,10 @@ app.get('/track', async (req, res) => {
   
   if (!m || !sig || !verifyString(`m=${m}`, sig)) {
     res.set({
-      'Content-Type': 'image/png',
+      'Content-Type': 'image/gif',
       'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0'
     });
-    return res.send(PNG_PIXEL);
+    return res.send(GIF_PIXEL);
   }
   
   // Track the open
@@ -168,10 +168,10 @@ app.get('/track', async (req, res) => {
   })();
   
   res.set({
-    'Content-Type': 'image/png',
+    'Content-Type': 'image/gif',
     'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0'
   });
-  res.send(PNG_PIXEL);
+  res.send(GIF_PIXEL);
 });
 
 // Click tracking endpoint
@@ -296,7 +296,7 @@ app.get('/api/stats', async (req, res) => {
       total_opens: totalOpens,
       total_clicks: totalClicks,
       campaigns: campaigns,
-      pixel_type: 'PNG'
+      pixel_type: 'GIF'
     };
 
     console.log('✅ Sending stats response');
@@ -395,10 +395,10 @@ app.post('/api/generate-snippet', async (req, res) => {
     // Generate tracking data
     const messageId = uuidv4();
     const pixelSig = signString(`m=${messageId}`);
-    const pixelUrl = `${APP_DOMAIN}/pixel?m=${messageId}&sig=${pixelSig}`;
+    const pixelUrl = `${APP_DOMAIN}/pixel.gif?m=${messageId}&sig=${pixelSig}`;
     
     const trackingHtml = `
-<!-- Orbitl Email Tracking (PNG) -->
+<!-- Orbitl Email Tracking (GIF) -->
 <img src="${pixelUrl}" width="1" height="1" style="display:none;max-height:1px;max-width:1px;opacity:0;border:0;" alt="" />
 <!-- End Orbitl Tracking -->
     `.trim();
@@ -416,7 +416,7 @@ app.post('/api/generate-snippet', async (req, res) => {
           campaign: campaign,
           manual: true,
           sent_at: new Date().toISOString(),
-          pixel_type: 'PNG'
+          pixel_type: 'GIF'
         }
       }]);
 
@@ -462,15 +462,15 @@ app.get('/debug-pixel', (req, res) => {
     <h1>SVG Pixel Debug Test</h1>
     
     <div class="pixel-test">
-        <h2>PNG Tracking Pixel:</h2>
-        <img src="/pixel?m=test-debug-123&sig=debug-signature" alt="PNG Pixel" />
-        <p>URL: /pixel?m=test-debug-123&sig=debug-signature</p>
+        <h2>GIF Tracking Pixel:</h2>
+        <img src="/pixel.gif?m=test-debug-123&sig=debug-signature" alt="GIF Pixel" />
+        <p>URL: /pixel.gif?m=test-debug-123&sig=debug-signature</p>
     </div>
     
     <div class="pixel-test">
-        <h2>Direct PNG:</h2>
-        <img src="data:image/png;base64,${PNG_PIXEL.toString('base64')}" alt="Direct PNG" />
-        <p>Inline PNG Base64</p>
+        <h2>Direct GIF:</h2>
+        <img src="data:image/gif;base64,${GIF_PIXEL.toString('base64')}" alt="Direct GIF" />
+        <p>Inline GIF Base64</p>
     </div>
     
     <p>Check your server logs for tracking data.</p>
@@ -479,9 +479,9 @@ app.get('/debug-pixel', (req, res) => {
         console.log('Debug page loaded');
         // Test the pixel load
         const img = new Image();
-        img.src = '/pixel?m=test-js-123&sig=js-signature';
-        img.onload = () => console.log('PNG pixel loaded successfully');
-        img.onerror = () => console.log('PNG pixel failed to load');
+        img.src = '/pixel.gif?m=test-js-123&sig=js-signature';
+        img.onload = () => console.log('GIF pixel loaded successfully');
+        img.onerror = () => console.log('GIF pixel failed to load');
     </script>
 </body>
 </html>
@@ -507,11 +507,11 @@ app.get('/', (req, res) => {
   res.json({
     service: 'Email Tracker API',
     domain: APP_DOMAIN,
-    pixel_type: 'PNG',
+    pixel_type: 'GIF',
     endpoints: {
       health: '/health',
       dashboard: '/dashboard',
-      pixel: '/pixel?m=MESSAGE_ID&sig=SIGNATURE',
+      pixel: '/pixel.gif?m=MESSAGE_ID&sig=SIGNATURE',
       click: '/click?m=MESSAGE_ID&l=LINK_INDEX&sig=SIGNATURE',
       debug: '/debug-pixel',
       api_stats: '/api/stats'
@@ -529,7 +529,7 @@ app.listen(PORT, () => {
   console.log(`📈 Dashboard: ${APP_DOMAIN}/dashboard`);
   console.log(`🎯 Generator: ${APP_DOMAIN}/generate.html`);
   console.log(`🐛 Debug: ${APP_DOMAIN}/debug-pixel`);
-  console.log(`📧 PNG Tracking ready at: ${APP_DOMAIN}/pixel`);
+  console.log(`📧 GIF Tracking ready at: ${APP_DOMAIN}/pixel.gif`);
 });
 
 // Handle graceful shutdown
