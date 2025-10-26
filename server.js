@@ -85,56 +85,72 @@ function clientIp(req) {
 
 // GIF Pixel tracking endpoint
 app.get('/pixel', async (req, res) => {
-  const { m, sig } = req.query;
-  
-  console.log('🔍 GIF Pixel hit:', { m, sig, ip: clientIp(req) });
-  
-  if (!m || !sig || !verifyString(`m=${m}`, sig)) {
-    console.log('❌ Invalid GIF pixel request');
-    // Still return a valid GIF but don't track
-    res.set({
-      'Content-Type': 'image/gif',
-      'Content-Length': GIF_PIXEL.length,
-      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Access-Control-Allow-Origin': '*'
-    });
-    return res.send(GIF_PIXEL);
-  }
-  
-  // Track the open asynchronously
-  (async () => {
-    try {
-      const openData = {
-        id: uuidv4(),
-        message_id: m,
-        opened_at: new Date().toISOString(),
-        ip: clientIp(req),
-        ua: req.get('User-Agent') || '',
-        referer: req.get('Referer') || ''
-      };
-      
-      console.log('💾 Tracking open:', { message_id: m, ip: openData.ip });
-      const result = await supabase.insert('opens', openData);
-      console.log('✅ Open tracked successfully');
-      
-    } catch (error) {
-      console.error('❌ Error tracking open:', error.message);
+  try {
+    const { m, sig } = req.query;
+
+    // Validate params
+    if (!m || !sig) return res.status(400).send("Missing parameters");
+
+    // Verify signature
+    if (!verifyString(`m=${m}`, sig)) {
+      console.log('❌ Invalid pixel signature');
+      return res.status(400).send("Invalid signature");
     }
-  })();
-  
-  // Return the GIF tracking pixel
-  res.set({
-    'Content-Type': 'image/gif',
-    'Content-Length': GIF_PIXEL.length,
-    'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-    'Access-Control-Allow-Origin': '*'
-  });
-  
-  res.send(GIF_PIXEL);
+
+    // Log open
+    console.log("📩 Open:", { m, sig, headers: req.headers });
+
+    // Always record the open, regardless of preview or real load
+    (async () => {
+      try {
+        const openData = {
+          id: uuidv4(),
+          message_id: m,
+          opened_at: new Date().toISOString(),
+          ip: clientIp(req),
+          ua: req.get('User-Agent') || '',
+          referer: req.get('Referer') || ''
+        };
+
+        console.log('💾 Tracking open:', { message_id: m, ip: openData.ip });
+        const result = await supabase.insert('opens', openData);
+        console.log('✅ Open tracked successfully');
+
+      } catch (error) {
+        console.error('❌ Error tracking open:', error.message);
+      }
+    })();
+
+    const accept = req.get("accept") || "";
+    const isDoc =
+      accept.includes("text/html") ||
+      req.get("sec-fetch-dest") === "document" ||
+      req.get("upgrade-insecure-requests");
+
+    const pixel =
+      Buffer.from(
+        "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
+        "base64"
+      ); // 1x1 transparent GIF
+
+    if (isDoc) {
+      // Email preview or navigation
+      res.set("Content-Type", "text/html; charset=utf-8");
+      res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+      return res.send(
+        `<!doctype html><html><head><meta charset="utf-8"><title>Tracking</title></head>
+         <body style="margin:0;padding:0"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="" width="1" height="1"/></body></html>`
+      );
+    } else {
+      // Proper image fetch
+      res.set("Content-Type", "image/gif");
+      res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.end(pixel, "binary");
+    }
+  } catch (err) {
+    console.error("Pixel error:", err);
+    res.status(500).send("Server error");
+  }
 });
 
 // Alternative tracking endpoint (backward compatibility)
