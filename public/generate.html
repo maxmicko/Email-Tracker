@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Email Tracking Snippet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generate Email Tracking Snippet</h1>
+        <p>Enter your campaign name to generate a tracking snippet with an SVG pixel for email open tracking.</p>
+        <form id="generateForm">
+            <label for="campaignName">Campaign Name:</label>
+            <input type="text" id="campaignName" name="campaignName" required>
+            <button type="submit">Generate Snippet</button>
+        </form>
+        <div id="result"></div>
+    </div>
+    <script>
+        document.getElementById('generateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const campaignName = document.getElementById('campaignName').value;
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Generating...';
+
+            try {
+                const response = await fetch('/api/generate-snippet', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ campaignName }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <h2>Generated Snippet:</h2>
+                        <p>Copy and paste this HTML into your email:</p>
+                        <textarea rows="5" cols="80" readonly>${data.snippet}</textarea>
+                        <p><strong>Message ID:</strong> ${data.messageId}</p>
+                        <p><strong>Pixel URL:</strong> <a href="${data.pixelUrl}" target="_blank">${data.pixelUrl}</a></p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>

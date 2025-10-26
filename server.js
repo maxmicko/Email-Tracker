@@ -7,11 +7,19 @@ const { verifyString, signString } = require('./signer');
 const supabase = require('./supabase-api');
 
 const app = express();
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+    },
+  },
+}));
 app.set('trust proxy', true);
 
-// Your Vercel domain
-const APP_DOMAIN = 'https://email-tracker-flax-psi.vercel.app';
+// Your local domain
+const APP_DOMAIN = 'http://localhost:3000';
 
 // SVG tracking pixel - more reliable than GIF
 const SVG_PIXEL = '<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" fill="transparent"/></svg>';
