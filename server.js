@@ -1,4 +1,4 @@
-// server.js - COMPLETE VERSION WITH SVG PIXELS
+// server.js - COMPLETE VERSION WITH PNG PIXELS
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
@@ -21,8 +21,8 @@ app.set('trust proxy', true);
 // Your local domain
 const APP_DOMAIN = 'http://localhost:3000';
 
-// SVG tracking pixel - more reliable than GIF
-const SVG_PIXEL = '<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" fill="transparent"/></svg>';
+// PNG tracking pixel - more reliable than GIF
+const PNG_PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 
 // Security: Restrict to your Vercel domain
 const ALLOWED_DOMAINS = [
@@ -68,7 +68,7 @@ app.get('/health', async (req, res) => {
       database: error ? 'error' : 'connected',
       message: error ? error.message : 'All systems operational',
       domain: APP_DOMAIN,
-      pixel_type: 'SVG'
+      pixel_type: 'PNG'
     });
   } catch (error) {
     res.json({ 
@@ -87,20 +87,20 @@ function clientIp(req) {
 app.get('/pixel', async (req, res) => {
   const { m, sig } = req.query;
   
-  console.log('🔍 SVG Pixel hit:', { m, sig, ip: clientIp(req) });
+  console.log('🔍 PNG Pixel hit:', { m, sig, ip: clientIp(req) });
   
   if (!m || !sig || !verifyString(`m=${m}`, sig)) {
-    console.log('❌ Invalid SVG pixel request');
-    // Still return a valid SVG but don't track
+    console.log('❌ Invalid PNG pixel request');
+    // Still return a valid PNG but don't track
     res.set({
-      'Content-Type': 'image/svg+xml',
-      'Content-Length': Buffer.byteLength(SVG_PIXEL),
+      'Content-Type': 'image/png',
+      'Content-Length': PNG_PIXEL.length,
       'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
       'Pragma': 'no-cache',
       'Expires': '0',
       'Access-Control-Allow-Origin': '*'
     });
-    return res.send(SVG_PIXEL);
+    return res.send(PNG_PIXEL);
   }
   
   // Track the open asynchronously
@@ -124,17 +124,17 @@ app.get('/pixel', async (req, res) => {
     }
   })();
   
-  // Return the SVG tracking pixel
+  // Return the PNG tracking pixel
   res.set({
-    'Content-Type': 'image/svg+xml',
-    'Content-Length': Buffer.byteLength(SVG_PIXEL),
+    'Content-Type': 'image/png',
+    'Content-Length': PNG_PIXEL.length,
     'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
     'Pragma': 'no-cache',
     'Expires': '0',
     'Access-Control-Allow-Origin': '*'
   });
   
-  res.send(SVG_PIXEL);
+  res.send(PNG_PIXEL);
 });
 
 // Alternative tracking endpoint (backward compatibility)
@@ -145,10 +145,10 @@ app.get('/track', async (req, res) => {
   
   if (!m || !sig || !verifyString(`m=${m}`, sig)) {
     res.set({
-      'Content-Type': 'image/svg+xml',
+      'Content-Type': 'image/png',
       'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0'
     });
-    return res.send(SVG_PIXEL);
+    return res.send(PNG_PIXEL);
   }
   
   // Track the open
@@ -168,10 +168,10 @@ app.get('/track', async (req, res) => {
   })();
   
   res.set({
-    'Content-Type': 'image/svg+xml',
+    'Content-Type': 'image/png',
     'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0'
   });
-  res.send(SVG_PIXEL);
+  res.send(PNG_PIXEL);
 });
 
 // Click tracking endpoint
@@ -296,7 +296,7 @@ app.get('/api/stats', async (req, res) => {
       total_opens: totalOpens,
       total_clicks: totalClicks,
       campaigns: campaigns,
-      pixel_type: 'SVG'
+      pixel_type: 'PNG'
     };
 
     console.log('✅ Sending stats response');
@@ -398,7 +398,7 @@ app.post('/api/generate-snippet', async (req, res) => {
     const pixelUrl = `${APP_DOMAIN}/pixel?m=${messageId}&sig=${pixelSig}`;
     
     const trackingHtml = `
-<!-- Orbitl Email Tracking (SVG) -->
+<!-- Orbitl Email Tracking (PNG) -->
 <img src="${pixelUrl}" width="1" height="1" style="display:none;max-height:1px;max-width:1px;opacity:0;border:0;" alt="" />
 <!-- End Orbitl Tracking -->
     `.trim();
@@ -416,7 +416,7 @@ app.post('/api/generate-snippet', async (req, res) => {
           campaign: campaign,
           manual: true,
           sent_at: new Date().toISOString(),
-          pixel_type: 'SVG'
+          pixel_type: 'PNG'
         }
       }]);
 
@@ -462,15 +462,15 @@ app.get('/debug-pixel', (req, res) => {
     <h1>SVG Pixel Debug Test</h1>
     
     <div class="pixel-test">
-        <h2>SVG Tracking Pixel:</h2>
-        <img src="/pixel?m=test-debug-123&sig=debug-signature" alt="SVG Pixel" />
+        <h2>PNG Tracking Pixel:</h2>
+        <img src="/pixel?m=test-debug-123&sig=debug-signature" alt="PNG Pixel" />
         <p>URL: /pixel?m=test-debug-123&sig=debug-signature</p>
     </div>
     
     <div class="pixel-test">
-        <h2>Direct SVG:</h2>
-        <img src="data:image/svg+xml;base64,${Buffer.from(SVG_PIXEL).toString('base64')}" alt="Direct SVG" />
-        <p>Inline SVG Base64</p>
+        <h2>Direct PNG:</h2>
+        <img src="data:image/png;base64,${PNG_PIXEL.toString('base64')}" alt="Direct PNG" />
+        <p>Inline PNG Base64</p>
     </div>
     
     <p>Check your server logs for tracking data.</p>
@@ -480,8 +480,8 @@ app.get('/debug-pixel', (req, res) => {
         // Test the pixel load
         const img = new Image();
         img.src = '/pixel?m=test-js-123&sig=js-signature';
-        img.onload = () => console.log('SVG pixel loaded successfully');
-        img.onerror = () => console.log('SVG pixel failed to load');
+        img.onload = () => console.log('PNG pixel loaded successfully');
+        img.onerror = () => console.log('PNG pixel failed to load');
     </script>
 </body>
 </html>
@@ -507,7 +507,7 @@ app.get('/', (req, res) => {
   res.json({
     service: 'Email Tracker API',
     domain: APP_DOMAIN,
-    pixel_type: 'SVG',
+    pixel_type: 'PNG',
     endpoints: {
       health: '/health',
       dashboard: '/dashboard',
@@ -529,7 +529,7 @@ app.listen(PORT, () => {
   console.log(`📈 Dashboard: ${APP_DOMAIN}/dashboard`);
   console.log(`🎯 Generator: ${APP_DOMAIN}/generate.html`);
   console.log(`🐛 Debug: ${APP_DOMAIN}/debug-pixel`);
-  console.log(`📧 SVG Tracking ready at: ${APP_DOMAIN}/pixel`);
+  console.log(`📧 PNG Tracking ready at: ${APP_DOMAIN}/pixel`);
 });
 
 // Handle graceful shutdown
