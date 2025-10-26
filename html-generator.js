@@ -11,7 +11,7 @@ function generate(message) {
     return `${BASE}/click?m=${id}&l=${i}&sig=${sig}`;
   });
   const pixelSig = signString(`m=${id}`);
-  const pixelUrl = `${BASE}/pixel.gif?m=${id}&sig=${pixelSig}`;
+  const pixelUrl = `${BASE}/pixel?m=${id}&sig=${pixelSig}`;
   let html = message.htmlBody || '<p>Open this message.</p>';
   wrappedLinks.forEach((wl, i) => { html = html.replace(new RegExp(`{{link${i}}}`, 'g'), wl); });
   html += `\n<img src="${pixelUrl}" width="1" height="1" style="display:block;max-height:1px;max-width:1px" alt="" />`;

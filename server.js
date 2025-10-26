@@ -40,8 +40,8 @@ app.use((req, res, next) => {
   const isAllowedHost = host && ALLOWED_DOMAINS.some(domain => host.includes(domain));
   const isAllowedReferer = !referer || ALLOWED_DOMAINS.some(domain => referer.includes(domain));
   
-  // Allow health checks and tracking endpoints (pixel.gif/click) from anywhere since they're called from emails
-  const isTrackingEndpoint = req.path === '/pixel.gif' || req.path === '/click' || req.path === '/track';
+  // Allow health checks and tracking endpoints (pixel/click) from anywhere since they're called from emails
+  const isTrackingEndpoint = req.path === '/pixel' || req.path === '/click' || req.path === '/track';
   const isHealthCheck = req.path === '/health';
   
   if (isTrackingEndpoint || isHealthCheck) {
@@ -84,7 +84,7 @@ function clientIp(req) {
 }
 
 // GIF Pixel tracking endpoint
-app.get('/pixel.gif', async (req, res) => {
+app.get('/pixel', async (req, res) => {
   const { m, sig } = req.query;
   
   console.log('🔍 GIF Pixel hit:', { m, sig, ip: clientIp(req) });
@@ -395,7 +395,7 @@ app.post('/api/generate-snippet', async (req, res) => {
     // Generate tracking data
     const messageId = uuidv4();
     const pixelSig = signString(`m=${messageId}`);
-    const pixelUrl = `${APP_DOMAIN}/pixel.gif?m=${messageId}&sig=${pixelSig}`;
+    const pixelUrl = `${APP_DOMAIN}/pixel?m=${messageId}&sig=${pixelSig}`;
     
     const trackingHtml = `
 <!-- Orbitl Email Tracking (GIF) -->
@@ -463,8 +463,8 @@ app.get('/debug-pixel', (req, res) => {
     
     <div class="pixel-test">
         <h2>GIF Tracking Pixel:</h2>
-        <img src="/pixel.gif?m=test-debug-123&sig=debug-signature" alt="GIF Pixel" />
-        <p>URL: /pixel.gif?m=test-debug-123&sig=debug-signature</p>
+        <img src="/pixel?m=test-debug-123&sig=debug-signature" alt="GIF Pixel" />
+        <p>URL: /pixel?m=test-debug-123&sig=debug-signature</p>
     </div>
     
     <div class="pixel-test">
@@ -479,7 +479,7 @@ app.get('/debug-pixel', (req, res) => {
         console.log('Debug page loaded');
         // Test the pixel load
         const img = new Image();
-        img.src = '/pixel.gif?m=test-js-123&sig=js-signature';
+        img.src = '/pixel?m=test-js-123&sig=js-signature';
         img.onload = () => console.log('GIF pixel loaded successfully');
         img.onerror = () => console.log('GIF pixel failed to load');
     </script>
@@ -511,7 +511,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       dashboard: '/dashboard',
-      pixel: '/pixel.gif?m=MESSAGE_ID&sig=SIGNATURE',
+      pixel: '/pixel?m=MESSAGE_ID&sig=SIGNATURE',
       click: '/click?m=MESSAGE_ID&l=LINK_INDEX&sig=SIGNATURE',
       debug: '/debug-pixel',
       api_stats: '/api/stats'
@@ -529,7 +529,7 @@ app.listen(PORT, () => {
   console.log(`📈 Dashboard: ${APP_DOMAIN}/dashboard`);
   console.log(`🎯 Generator: ${APP_DOMAIN}/generate.html`);
   console.log(`🐛 Debug: ${APP_DOMAIN}/debug-pixel`);
-  console.log(`📧 GIF Tracking ready at: ${APP_DOMAIN}/pixel.gif`);
+  console.log(`📧 GIF Tracking ready at: ${APP_DOMAIN}/pixel`);
 });
 
 // Handle graceful shutdown
